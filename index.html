@@ -6,198 +6,249 @@
   <title>idokeido</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Code+Latin:wght@100..700&family=Zen+Kaku+Gothic+Antique:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Zen Kaku Gothic Antique', sans-serif;
       background: #f5f5f7;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 100vh; height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      color: #1d1d1f;
     }
 
-    /* ── IDLE STATE ── */
+    /* ── IDLE ── */
     #idle {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 32px;
-      transition: opacity 0.4s;
+      display: flex; flex-direction: column; align-items: center; gap: 32px;
     }
-    .idle-label {
-      font-size: 13px;
-      letter-spacing: 0.05em;
-      color: rgba(0,0,0,0.35);
-    }
+    .idle-label { font-size: 13px; letter-spacing: 0.05em; color: rgba(0,0,0,0.35); }
 
-    /* ── RESULT STATE ── */
+    /* ── RESULT ── */
     #result {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      width: min(760px, 100vw - 48px);
-      gap: 0;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      width: 100vw; height: 100vh; height: 100dvh;
+      padding: 0 24px; position: relative;
+      transition: padding 0.5s cubic-bezier(0.16, 1, 0.3, 1), justify-content 0s;
+    }
+    #result.expanded {
+      justify-content: flex-start;
+      padding-top: 80px; padding-bottom: 120px;
+      overflow-y: auto; overflow-x: hidden;
     }
 
-    /* Big coords */
-    .coord-block {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 56px;
+    /* ── FIXED HEADER (Shown in expanded state) ── */
+    .fixed-header {
+      position: fixed; top: 0; left: 0; width: 100vw;
+      background: rgba(245,245,247,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      z-index: 100; display: flex; justify-content: center; gap: 32px;
+      padding: 16px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);
+      transform: translateY(-100%); opacity: 0; pointer-events: none;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s;
     }
-    .coord-tag {
-      font-size: 15px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: rgba(0,0,0,0.3);
+    .expanded .fixed-header { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .fh-coord { display: flex; align-items: baseline; gap: 8px; }
+    .fh-tag { font-size: 10px; font-weight: 500; color: rgba(0,0,0,0.4); letter-spacing: 0.1em; }
+    .fh-num { font-family: "M PLUS Code Latin", monospace; font-size: 16px; font-weight: 500; color: #1d1d1f; }
+    .fh-num .dec { color: rgba(0,0,0,0.5); }
+    .fh-num .sign { color: rgba(0,0,0,0.3); margin-right: 2px; }
+
+    /* ── IOS WARNING ── */
+    .ios-warning {
+      display: none; position: absolute; top: 12px; left: 12px; right: 12px;
+      background: #fff3cd; color: #856404; padding: 10px 14px; border-radius: 10px;
+      font-size: 11px; text-align: center; border: 1px solid #ffeeba; line-height: 1.5;
+      z-index: 10; animation: slideDown 0.4s ease;
     }
+
+    /* ── MAIN COORDS ── */
+    .main-coords {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.4s;
+      max-height: 500px;
+    }
+    .expanded .main-coords { opacity: 0; transform: scale(0.92) translateY(-20px); max-height: 0; pointer-events: none; overflow: hidden; }
+
+    .status-pill {
+      display: none; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px;
+      font-size: 11px; font-weight: 500; margin-bottom: 24px; animation: fadeIn 0.3s ease;
+    }
+    .status-pill.searching { background: rgba(42,143,255,0.08); color: #2a8fff; }
+    .status-pill.converging { background: rgba(255,165,0,0.08); color: #e68a00; }
+    .status-pill.locked { background: rgba(26,140,58,0.08); color: #1a8c3a; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status-pill.searching .status-dot, .status-pill.converging .status-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+
+    .coord-hero { text-align: center; margin-bottom: 8px; animation: fadeSlideUp 0.5s ease both; }
+    .coord-hero:nth-child(3) { animation-delay: 0.08s; } /* lonHero inside mainCoords */
+    .coord-tag { font-size: 15px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0,0,0,0.25); margin-bottom: 4px; }
     .coord-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: clamp(36px, 7vw, 72px);
-      font-weight: 300;
-      color: #1d1d1f;
-      letter-spacing: -0.03em;
-      line-height: 1;
+      font-family: "M PLUS Code Latin", monospace; font-optical-sizing: auto; font-variation-settings: "wdth" 100;
+      font-size: clamp(36px, 8vw, 72px); font-weight: 300; color: #1d1d1f; letter-spacing: -0.03em; line-height: 1;
     }
-    .coord-num .sign { color: rgba(0,0,0,0.25); }
-    .coord-num .dec  { color: rgba(0,0,0,0.45); }
+    .coord-num .sign { color: rgba(0,0,0,0.2); }
+    .coord-num .dec  { color: rgba(0,0,0,0.4); }
     .coord-dms {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 400;
-      color: rgba(0,0,0,0.35);
-      letter-spacing: 0.02em;
-      margin-top: 4px;
+      font-family: "M PLUS Code Latin", monospace; font-optical-sizing: auto; font-variation-settings: "wdth" 100;
+      font-size: 12px; color: rgba(0,0,0,0.3); letter-spacing: 0.02em; margin-top: 4px;
     }
 
-    /* Divider */
-    .sep {
-      width: 100%;
-      height: 1px;
-      background: rgba(0,0,0,0.08);
-      margin-bottom: 28px;
+    /* ── EXPLAIN ARTICLE (shown strictly in expanded state) ── */
+    .explain-article {
+      max-width: 600px; width: 100%; display: none;
+      margin: 0 auto;
+      animation: fadeInSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+    .explain-section {
+      background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+    .explain-section.transparent-sec {
+      background: transparent; box-shadow: none; padding: 0; margin-bottom: 32px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .explain-h2 { font-size: 16px; font-weight: 700; color: #1d1d1f; margin-bottom: 14px; letter-spacing: 0.02em; }
+    .explain-p { font-size: 13px; line-height: 1.8; color: rgba(0,0,0,0.65); margin-bottom: 14px; }
+    .explain-p:last-child { margin-bottom: 0; }
+    .code-inline { font-family: "M PLUS Code Latin", monospace; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 
-    /* Log table */
-    .log-title {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(0,0,0,0.25);
-      align-self: flex-start;
-      margin-bottom: 14px;
+    /* ── DATA ELEMENTS (Used in Explain Section) ── */
+    .quality-badge {
+      display: none; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 14px; font-size: 20px; font-weight: 700; margin-bottom: 24px;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .log-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .log-table tr {
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-    }
-    .log-table tr:last-child { border-bottom: none; }
-    .log-table td {
-      padding: 9px 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      line-height: 1;
-    }
-    .log-table .lk {
-      color: rgba(0,0,0,0.3);
-      font-size: 11px;
-      letter-spacing: 0.04em;
-      width: 160px;
-      vertical-align: middle;
-    }
-    .log-table .lv {
-      color: #1d1d1f;
-      font-weight: 400;
-      vertical-align: middle;
-    }
-    .log-table .lv.good { color: #1a8c3a; }
-    .log-table .lv.warn { color: #b85000; }
+    .quality-S { background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 4px 16px rgba(16,185,129,0.35); }
+    .quality-A { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; box-shadow: 0 4px 16px rgba(59,130,246,0.35); }
+    .quality-B { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 16px rgba(245,158,11,0.35); }
+    .quality-C { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.35); }
+    .quality-D { background: linear-gradient(135deg, #6b7280, #4b5563); color: #fff; box-shadow: 0 4px 16px rgba(107,114,128,0.35); }
 
-    /* Retry button */
-    .retry-wrap {
-      margin-top: 44px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: rgba(0,0,0,0.3);
-      font-size: 13px;
-      transition: color 0.2s;
+    .chips-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px; width: 100%; }
+    .chip {
+      display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px;
+      background: rgba(0,0,0,0.03);
+      font-family: "M PLUS Code Latin", monospace; font-optical-sizing: auto; font-variation-settings: "wdth" 100;
+      font-size: 11px; color: rgba(0,0,0,0.45); opacity: 0; transform: translateY(8px);
+      animation: chipIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; white-space: nowrap;
     }
-    .retry-wrap:hover { color: rgba(0,0,0,0.7); }
+    .chip:nth-child(1) { animation-delay: 0.1s; } .chip:nth-child(2) { animation-delay: 0.18s; }
+    .chip:nth-child(3) { animation-delay: 0.26s; } .chip:nth-child(4) { animation-delay: 0.34s; }
+    .chip:nth-child(5) { animation-delay: 0.42s; }
+    .chip .chip-icon { font-size: 13px; }
+    .chip.good { color: #1a8c3a; background: rgba(26,140,58,0.06); }
+    .chip.warn { color: #b85000; background: rgba(184,80,0,0.06); }
 
-    /* ── BUTTON ── */
+    .sparkline-bar { width: 100%; max-width: 400px; opacity: 0; animation: fadeIn 0.4s ease 0.5s forwards; }
+    .sparkline-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .sparkline-label span { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.2); }
+    .sparkline-label .val {
+      font-family: "M PLUS Code Latin", monospace; font-optical-sizing: auto; font-variation-settings: "wdth" 100;
+      font-size: 10px; color: rgba(0,0,0,0.35); letter-spacing: normal; text-transform: none;
+    }
+    .sparkline-wrap { width: 100%; height: 40px; background: rgba(0,0,0,0.02); border-radius: 8px; overflow: hidden; }
+    .sparkline-wrap svg { width: 100%; height: 100%; }
+
+    /* ── BUTTONS ── */
     .get-btn {
-      position: relative;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      font-weight: 500;
-      color: #fff;
-      padding: 16px 40px;
+      position: relative; border: none; border-radius: 50px;
+      cursor: pointer; font-family: 'Zen Kaku Gothic Antique', sans-serif;
+      font-size: 15px; font-weight: 500; color: #fff; padding: 16px 40px;
       background: linear-gradient(160deg, #2a8fff, #005ce6);
-      box-shadow:
-        0 6px 24px rgba(0,100,255,0.32),
-        inset 0 1px 0 rgba(255,255,255,0.22),
-        inset 0 -1px 0 rgba(0,0,30,0.18);
-      transition: box-shadow 0.2s, transform 0.15s;
-      outline: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      box-shadow: 0 6px 24px rgba(0,100,255,0.32), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,30,0.18);
+      transition: box-shadow 0.2s, transform 0.1s; outline: none; display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .get-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
-    }
-    .get-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 32px rgba(0,100,255,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-    }
+    .get-btn::before { content: ''; position: absolute; inset: 0; border-radius: 50px; background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%); }
+    .get-btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 10px 32px rgba(0,100,255,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
     .get-btn:active:not(:disabled) { transform: scale(0.97); }
     .get-btn:disabled { opacity: 0.55; cursor: default; }
 
-    .spinner {
-      width: 15px; height: 15px;
-      border: 1.5px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.65s linear infinite;
-      display: none;
+    /* Green Retry Button (Fixed Bottom) */
+    .btn-green {
+      background: linear-gradient(160deg, #10b981, #059669);
+      box-shadow: 0 6px 24px rgba(16,185,129,0.32), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,30,0.18);
     }
-    .btn-loading .spinner { display: block; }
-    .btn-loading .btn-ico { display: none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-green:hover:not(:disabled) { box-shadow: 0 10px 32px rgba(16,185,129,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
 
-    /* Error */
-    #errorMsg {
-      display: none;
-      font-size: 13px;
-      color: #c0392b;
-      margin-top: 16px;
-      text-align: center;
-      line-height: 1.6;
+    .fixed-bottom-wrap {
+      position: fixed; bottom: 32px; left: 0; width: 100vw; display: flex; justify-content: center;
+      z-index: 100; transform: translateY(100px); opacity: 0; pointer-events: none;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s;
     }
+    .expanded .fixed-bottom-wrap { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+    #showDetailsBtn { margin-top: 40px; animation: fadeIn 0.5s ease both; animation-delay: 0.16s; }
+
+    .spinner { width: 15px; height: 15px; border: 1.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.65s linear infinite; display: none; }
+    .btn-loading .spinner { display: block; } .btn-loading .btn-ico { display: none; }
+    #errorMsg { display: none; font-size: 13px; color: #c0392b; margin-top: 16px; text-align: center; line-height: 1.6; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+    @keyframes chipIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── GNSS (Phase 3) ── */
+    .btn-purple { background: linear-gradient(160deg, #8b5cf6, #6d28d9); box-shadow: 0 6px 24px rgba(139,92,246,0.32), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,30,0.18); }
+    .btn-purple:hover:not(:disabled) { box-shadow: 0 10px 32px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
+    .btn-sm { padding: 12px 28px; font-size: 13px; }
+    .idle-gnss { margin-top: -12px; }
+    .gnss-section { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .gnss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .gnss-cell { background: rgba(0,0,0,0.02); border-radius: 10px; padding: 12px 14px; }
+    .gnss-cell-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.3); margin-bottom: 4px; }
+    .gnss-cell-value { font-family: "M PLUS Code Latin", monospace; font-size: 18px; font-weight: 500; color: #1d1d1f; }
+    .gnss-cell-value.good { color: #059669; } .gnss-cell-value.warn { color: #d97706; } .gnss-cell-value.bad { color: #dc2626; }
+    .gnss-cell.full-width { grid-column: 1 / -1; }
+    .gnss-stream { font-family: "M PLUS Code Latin", monospace; font-size: 10px; color: rgba(0,0,0,0.35); background: rgba(0,0,0,0.02); border-radius: 8px; padding: 10px; max-height: 120px; overflow-y: auto; white-space: pre; line-height: 1.5; margin-top: 12px; }
+    .fix-badge { display: inline-flex; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .fix-none { background: rgba(107,114,128,0.1); color: #6b7280; } .fix-single { background: rgba(245,158,11,0.1); color: #d97706; }
+    .fix-dgps { background: rgba(59,130,246,0.1); color: #2563eb; } .fix-rtk-float { background: rgba(139,92,246,0.1); color: #7c3aed; }
+    .fix-rtk-fixed { background: rgba(16,185,129,0.1); color: #059669; }
+    .gnss-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(0,0,0,0.5); margin-bottom: 16px; }
+    .gnss-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse-dot 1.2s ease-in-out infinite; }
+    .gnss-status-dot.off { background: #6b7280; animation: none; }
+    .gnss-disconnect { font-size: 11px; color: rgba(0,0,0,0.3); cursor: pointer; text-decoration: underline; margin-left: auto; }
+    .gnss-disconnect:hover { color: #dc2626; }
+    .gnss-unavail { font-size: 12px; color: rgba(0,0,0,0.35); text-align: center; margin-top: 8px; }
+    /* ── POPUP (Acquisition) ── */
+    .acq-overlay {
+      position: fixed; inset: 0; background: rgba(244,244,246,0.5);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      z-index: 200; display: none; align-items: center; justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+    .acq-popup {
+      background: rgba(255,255,255,0.85); border-radius: 24px; padding: 32px 24px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,1);
+      width: 90%; max-width: 320px; transform: scale(0.9); opacity: 0;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.1s;
+    }
+    .acq-title { font-size: 16px; font-weight: 700; color: #1d1d1f; margin-bottom: 8px; }
+    .acq-desc { font-size: 13px; color: rgba(0,0,0,0.5); line-height: 1.6; margin-bottom: 20px; }
+    .acq-timer { font-family: "M PLUS Code Latin", monospace; font-size: 40px; font-weight: 600; color: #2a8fff; margin-bottom: 24px; }
   </style>
 </head>
 <body>
 
-  <!-- Idle / button state -->
+  <!-- Acquire Popup overlay -->
+  <div class="acq-overlay" id="acqOverlay">
+    <div class="acq-popup">
+      <div class="acq-title">測位中</div>
+      <div class="acq-desc">GPSデータを継続取得し、<br>カルマンフィルタでノイズを除去しています。</div>
+      <div class="acq-timer" id="acqTimer">60.0s</div>
+      <button class="get-btn btn-sm" onclick="stopAndFinalize()" style="width:100%; display:flex; justify-content:center;">
+        <span>現在の精度で確定</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Idle -->
   <div id="idle">
     <span class="idle-label">idokeido</span>
     <button class="get-btn" id="btn" onclick="acquire()">
@@ -209,137 +260,546 @@
       </span>
       <span id="btnTxt">現在地を取得</span>
     </button>
+    <div class="idle-gnss">
+      <button class="get-btn btn-purple btn-sm" id="gnssBtn" onclick="connectGNSS('serial')" style="display:none;">
+        <span class="btn-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6m0 8v6M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/></svg></span>
+        <span>外部GNSS接続(試験的)</span>
+      </button>
+    </div>
     <div id="errorMsg"></div>
   </div>
 
-  <!-- Result state -->
+  <!-- Result -->
   <div id="result">
-    <!-- LAT -->
-    <div class="coord-block">
-      <span class="coord-tag">緯度</span>
-      <div class="coord-num" id="latNum"></div>
-      <div class="coord-dms" id="latDms"></div>
-    </div>
-    <!-- LON -->
-    <div class="coord-block">
-      <span class="coord-tag">経度</span>
-      <div class="coord-num" id="lonNum"></div>
-      <div class="coord-dms" id="lonDms"></div>
+    <!-- Fixed Header (expanded state only) -->
+    <div class="fixed-header" id="fixedHeader">
+      <div class="fh-coord">
+        <span class="fh-tag">LAT</span><span class="fh-num" id="fhLat"></span>
+      </div>
+      <div class="fh-coord">
+        <span class="fh-tag">LON</span><span class="fh-num" id="fhLon"></span>
+      </div>
     </div>
 
-    <div class="sep"></div>
-
-    <span class="log-title">取得ログ</span>
-    <table class="log-table" id="logTable"></table>
-
-    <div class="retry-wrap" onclick="reset()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
-      </svg>
-      再取得
+    <!-- iOS Warning -->
+    <div id="iosWarning" class="ios-warning">
+      iOSの設定で「正確な位置情報」がオフになっている可能性があります。<br>
+      設定 &gt; プライバシー &gt; 位置情報サービス で「正確な位置情報」をオンにしてください。
     </div>
-  </div>
+
+    <!-- Main Coordinates (base state) -->
+    <div class="main-coords" id="mainCoords">
+      <div id="statusPill" class="status-pill searching">
+        <span class="status-dot"></span><span id="statusLabel">衛星探索中...</span>
+      </div>
+
+      <div class="coord-hero" id="latHero">
+        <div class="coord-tag">緯度</div>
+        <div class="coord-num" id="latNum"></div>
+        <div class="coord-dms" id="latDms"></div>
+      </div>
+
+      <div class="coord-hero" id="lonHero">
+        <div class="coord-tag">経度</div>
+        <div class="coord-num" id="lonNum"></div>
+        <div class="coord-dms" id="lonDms"></div>
+      </div>
+
+      <button class="get-btn" id="showDetailsBtn" onclick="showDetails()">
+        <span class="btn-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+        <span>情報を見る</span>
+      </button>
+    </div>
+
+    <!-- Expanding Explanatory Content -->
+    <div class="explain-article" id="explainArticle">
+      
+      <!-- Visual Data Area (from previous details wrap) -->
+      <div class="explain-section transparent-sec">
+        <div id="qualityBadge" class="quality-badge quality-D">D</div>
+        <div class="chips-row" id="chipsRow"></div>
+        <div class="sparkline-bar" id="sparklineBar" style="display:none;">
+          <div class="sparkline-label"><span>精度推移</span><span class="val" id="sparklineVal"></span></div>
+          <div class="sparkline-wrap"><svg id="sparklineSvg" viewBox="0 0 400 40" preserveAspectRatio="none"></svg></div>
+        </div>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">計測データの見方</h2>
+        <p class="explain-p">画面上部に表示されている各データの意味は以下の通りです。</p>
+        <p class="explain-p">
+          • <strong>品質スコア（アルファベット）</strong>: 総合的な測位精度のランクです。S（最高精度・5m未満）、A（高精度・15m未満）、B（実用・50m未満）、C（低精度）、D（参考値）の5段階で評価されます。<br>
+          • <strong>◎ ±XXm</strong>: 現在の座標に含まれると推定される誤差半径（メートル）です。<br>
+          • <strong>⏱ XX.Xs</strong>: 初回の測位開始から現在までに経過した時間です。<br>
+          • <strong>📡 Xサンプル</strong>: ここまでの計算に利用された観測データの数です。<br>
+          • <strong>✦ KF +XX%</strong>: カルマンフィルタによる補正によって、デバイスからの生データよりもどれだけ精度が向上したか（ノイズが除去されたか）の割合を示します。<br>
+          • <strong>精度推移グラフ</strong>: 観測開始から現在にいたるまでの誤差半径（±XXm）の推移を視覚化したものです。右に行くほど値が小さくなり、精度が「収束」していく様子がわかります。
+        </p>
+      </div>
+
+      <!-- Concepts -->
+      <div class="explain-section">
+        <h2 class="explain-h2">idokeidoの設計思想</h2>
+        <p class="explain-p">「idokeido（緯度経度）」は、モダンブラウザが提供する <strong>W3C Geolocation API</strong> のポテンシャルを極限まで引き出し、最高精度の座標を最も直感的かつ美しく取得・表示するための実験的Webアプリケーションです。</p>
+        <p class="explain-p">単なる現在地の取得にとどまらず、デバイスのGNSSやWi-Fi測位から得られる生のセンサーデータ（Raw Data）に内在するノイズを数学的アプローチで除去し、信頼に足る強固な座標データへと「収束」していく過程を可視化しています。GPSの制約やOSの抽象化レイヤーを意識することで、位置情報技術の深淵に触れることができます。</p>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">2次元カルマンフィルタによる平滑化</h2>
+        <p class="explain-p">GPSから得られる座標には、大気圏の遅延や建物によるマルチパス（反射）による誤差が必ず含まれます。<br>本システムでは、JavaScript上でゼロからインライン実装された <strong>Kalman Filter（カルマンフィルタ）</strong> をリアルタイムに適用しています。</p>
+        <p class="explain-p">状態ベクトルに「座標（x,y）」と「速度（vx,vy）」の4次元を持たせ、毎回の測定値とその測定精度（Accuracy）を観測ノイズとして動的モデルに適用します。これにより、急激な座標の「飛び」や「ジグザグ移動」を抑制し、実際の真の移動に沿った極めて滑らかな座標（上部情報チップでの <span class="code-inline">Δ補正</span>：フィルタにより生データから空間的にどれだけ座標が補正されたかを示す距離）を導き出します。複雑な行列演算をブラウザ内で自己完結させている点が技術的な独自性です。</p>
+        
+        <h3 class="explain-h2" style="font-size: 14px; margin-top: 24px;">計算の数学的基盤</h3>
+        <p class="explain-p">
+          本システムは、等速直線運動を前提とした物理モデルを採用しています。<br>
+          状態ベクトルを <strong>x = [p<sub>x</sub>, p<sub>y</sub>, v<sub>x</sub>, v<sub>y</sub>]<sup>T</sup></strong> と定義します。ここでの計算は、デバイス側から新しい位置情報（OSやハードウェアに依存した数秒に1度の不定期なデータ）が受信されるたびに実行されます。
+        </p>
+        <p class="explain-p">
+          まず、<strong>F</strong> を測定間隔（Δt）に応じた状態遷移モデル、<strong>P</strong> を計算された推定誤差（不確実性）を表す共分散行列、<strong>Q</strong> を予期しない加速度などを示すプロセスノイズと定義します。これらを用いて、前回から現在までの座標の「予測」を行います。
+        </p>
+        <p class="explain-p" style="font-family: 'M PLUS Code Latin', monospace; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px;">
+          <strong>予測ステップ (Predict):</strong><br>
+          x<sub>k|k-1</sub> = F · x<sub>k-1|k-1</sub><br>
+          P<sub>k|k-1</sub> = F · P<sub>k-1|k-1</sub> · F<sup>T</sup> + Q<br>
+        </p>
+        <p class="explain-p">
+          次に、<strong>z<sub>k</sub></strong> をセンサから新しく得られた観測値（局所座標）、<strong>R</strong> をOSから提供されるAccuracyに基づく観測ノイズの共分散行列と定義します。<br>
+          この時、<strong>K</strong>（カルマンゲイン）と呼ばれる重み係数を計算し、「予測した位置」と「センサが示した位置」のどちらをどれだけ信用するかを理論的に決定し、「更新（補正）」を行います。
+        </p>
+        <p class="explain-p" style="font-family: 'M PLUS Code Latin', monospace; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px;">
+          <strong>更新ステップ (Update):</strong><br>
+          K = P<sub>k|k-1</sub> · H<sup>T</sup> · (H · P<sub>k|k-1</sub> · H<sup>T</sup> + R)<sup>-1</sup><br>
+          x<sub>k|k</sub> = x<sub>k|k-1</sub> + K · (z<sub>k</sub> - H · x<sub>k|k-1</sub>)<br>
+          P<sub>k|k</sub> = (I - K · H) · P<sub>k|k-1</sub>
+        </p>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">精度収束ロジックと除外処理</h2>
+        <p class="explain-p">初回の測位データは誤差が数千メートルに及ぶこともあり、システムは直ちに結果を確定しません。内部では <code>watchPosition()</code> を利用して継続的な観測を行い、カルマンフィルタによる推定誤差が <span class="code-inline">10m</span> 以下になるまで収束プロセスを継続します。ただし、いつまでも結果が出ない状態を防ぐため、観測開始から <span class="code-inline">10秒</span> 経過した時点での最良値を最終結果として採用して確定させるよう設計されています。</p>
+        <p class="explain-p">また、時速300kmを超えるような物理的に不可能な移動（座標ジャンプ現象）が検出された場合は、異常値として即座に破棄する堅牢なロジックを搭載しています。これにより、ビルの谷間など厳しいマルチパス環境下での突発的なノイズを効果的に排除します。</p>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">プライバシー保護と制約</h2>
+        <p class="explain-p">本番環境において、測位からフィルタリングまでの計算処理はすべてクライアント（あなたのブラウザ）内で完全に完結して実行されます。位置情報がいかなる外部サーバーにも送信されることは一切ありません。</p>
+        <p class="explain-p">※iOS環境においては、OSのプライバシー設定において「正確な位置情報」がオフになっている場合、OS側で意図的に大幅な誤差が加えられます。システムはこの特有の誤差分布を検知し、品質スコアを低下させて警告を表示します。これはプライバシー保護機能と利便性のトレードオフを可視化する試みでもあります。</p>
+      </div>
+
+      <!-- Phase 3: External GNSS -->
+      <div class="gnss-section" id="gnssPanel" style="display:none;">
+        <h2 class="explain-h2">外部GNSSレシーバー</h2>
+        <div class="gnss-status" id="gnssStatus">
+          <span class="gnss-status-dot off" id="gnssStatusDot"></span>
+          <span id="gnssStatusText">未接続</span>
+          <span class="gnss-disconnect" id="gnssDisconnect" onclick="disconnectGNSS()" style="display:none;">切断</span>
+        </div>
+        <div class="gnss-grid" id="gnssGrid">
+          <div class="gnss-cell"><div class="gnss-cell-label">FIX TYPE</div><div class="gnss-cell-value" id="gnssFixType">—</div></div>
+          <div class="gnss-cell"><div class="gnss-cell-label">衛星数</div><div class="gnss-cell-value" id="gnssSats">—</div></div>
+          <div class="gnss-cell"><div class="gnss-cell-label">HDOP</div><div class="gnss-cell-value" id="gnssHdop">—</div></div>
+          <div class="gnss-cell"><div class="gnss-cell-label">標高</div><div class="gnss-cell-value" id="gnssAlt">—</div></div>
+          <div class="gnss-cell"><div class="gnss-cell-label">LAT σ</div><div class="gnss-cell-value" id="gnssLatErr">—</div></div>
+          <div class="gnss-cell"><div class="gnss-cell-label">LON σ</div><div class="gnss-cell-value" id="gnssLonErr">—</div></div>
+          <div class="gnss-cell full-width"><div class="gnss-cell-label">NMEA STREAM</div><div class="gnss-stream" id="gnssStream">接続待ち...</div></div>
+        </div>
+      </div>
+
+      <div class="explain-section" id="gnssExplainSection">
+        <h2 class="explain-h2">Phase 3: 外部GNSS連携</h2>
+        <p class="explain-p">この機能は極めて<strong>試験的（Experimental）</strong>であり、通信の切断やパースエラーなど、<strong>圧倒的に不安定な挙動</strong>を示す可能性があります。実用的なナビゲーション用途ではなく、技術実証を主な目的としています。</p>
+        <p class="explain-p">Web Serial API または Web Bluetooth API を使用して、u-blox ZED-F9P 等の外部GNSSレシーバーに直接接続します。ブラウザの標準的な Geolocation API による抽象化を完全にバイパスし、生の NMEA センテンスを JavaScript で直接解析することで、以下のような専門的な空間データへ直接アクセスします。</p>
+        <p class="explain-p">• <strong>可視衛星・使用衛星数</strong>（$GPGSV/$GLGSV）: 上空のGNSSコンステレーション状況<br>• <strong>HDOP/VDOP/PDOP</strong>（精度低下率）: 衛星配置による幾何学的な測位誤差の増幅指標<br>• <strong>Fix品質</strong>（単独/DGPS/RTK Float/RTK Fixed）: 搬送波位相測位の解のステータス<br>• <strong>測位誤差の標準偏差</strong>（$GPGST）: mm/cmクラスの厳密な精度推定値</p>
+        <p class="explain-p">良好な観測条件下で RTK Fixed 状態を引き出すことができれば、ブラウザ上で 1〜3cm 程度の驚異的な精度を実現することが可能です。<br>※ Chrome系ブラウザ（Chrome, Edge, Opera）でのみ動作します。Safari / Firefox等では対象APIがサポートされていないためご利用いただけません。</p>
+      </div>
+    </div> <!-- explain-article end -->
+
+    <!-- Fixed Bottom Retry Button -->
+    <div class="fixed-bottom-wrap" id="fixedBottomWrap">
+      <button class="get-btn btn-green" onclick="reset()">
+        <span class="btn-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+          </svg>
+        </span>
+        <span>再取得する</span>
+      </button>
+    </div>
+
+  </div> <!-- result end -->
 
 <script>
-  const btn      = document.getElementById('btn');
-  const btnTxt   = document.getElementById('btnTxt');
-  const errDiv   = document.getElementById('errorMsg');
-  const idleEl   = document.getElementById('idle');
+  const btn = document.getElementById('btn');
+  const btnTxt = document.getElementById('btnTxt');
+  const errDiv = document.getElementById('errorMsg');
+  const idleEl = document.getElementById('idle');
   const resultEl = document.getElementById('result');
 
-  function toDMS(deg, isLat) {
-    const abs = Math.abs(deg);
-    const d   = Math.floor(abs);
-    const mf  = (abs - d) * 60;
-    const m   = Math.floor(mf);
-    const s   = (mf - m) * 60;
-    const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
-    return `${dir}  ${d}°  ${String(m).padStart(2,'0')}′  ${s.toFixed(5)}″`;
-  }
-
-  function renderCoord(el, deg) {
-    const sign   = deg < 0 ? '−' : '+';
-    const abs    = Math.abs(deg);
-    const [i, d] = abs.toFixed(8).split('.');
-    el.innerHTML =
-      `<span class="sign">${sign}</span>` +
-      `${i}` +
-      `<span class="dec">.${d}</span>`;
-  }
-
-  function logRow(key, value, cls='') {
-    return `<tr><td class="lk">${key}</td><td class="lv ${cls}">${value}</td></tr>`;
-  }
-
-  function acquire() {
-    if (!navigator.geolocation) {
-      showErr('Geolocation APIに対応していません。');
-      return;
+  // ═══════════════════════════════════════
+  //  Kalman Filter 2D (position + velocity)
+  // ═══════════════════════════════════════
+  class KalmanFilter2D {
+    constructor() {
+      this.x = [0, 0, 0, 0];
+      this.P = [[1000,0,0,0],[0,1000,0,0],[0,0,100,0],[0,0,0,100]];
+      this.initialized = false;
+      this.refLat = 0; this.refLon = 0; this.lastTime = 0;
     }
+    toLocal(lat, lon) {
+      const dLat = (lat - this.refLat) * Math.PI / 180;
+      const dLon = (lon - this.refLon) * Math.PI / 180;
+      const cosLat = Math.cos(this.refLat * Math.PI / 180);
+      return [dLat * 6371000, dLon * 6371000 * cosLat];
+    }
+    toGlobal(px, py) {
+      const R = 6371000, cosLat = Math.cos(this.refLat * Math.PI / 180);
+      return [this.refLat + (px/R) * (180/Math.PI), this.refLon + (py/(R*cosLat)) * (180/Math.PI)];
+    }
+    matMul(A, B) {
+      if (typeof B[0] === 'number') return A.map(row => row.reduce((s,v,j) => s + v*B[j], 0));
+      const n = A.length, res = Array.from({length:n}, () => new Array(n).fill(0));
+      for (let i=0;i<n;i++) for (let j=0;j<n;j++) for (let k=0;k<n;k++) res[i][j] += A[i][k]*B[k][j];
+      return res;
+    }
+    matAdd(A, B) { return A.map((r,i) => r.map((v,j) => v + B[i][j])); }
+    matSub(A, B) { return A.map((r,i) => r.map((v,j) => v - B[i][j])); }
+    transpose(A) { return A[0].map((_,j) => A.map(r => r[j])); }
+    inv2x2(M) {
+      const [[a,b],[c,d]] = M, det = a*d - b*c;
+      if (Math.abs(det) < 1e-12) return [[1,0],[0,1]];
+      return [[d/det,-b/det],[-c/det,a/det]];
+    }
+    update(lat, lon, accuracy, timestamp) {
+      if (!this.initialized) {
+        this.refLat = lat; this.refLon = lon;
+        const [px,py] = this.toLocal(lat, lon);
+        this.x = [px, py, 0, 0];
+        this.P = [[accuracy*accuracy,0,0,0],[0,accuracy*accuracy,0,0],[0,0,100,0],[0,0,0,100]];
+        this.lastTime = timestamp; this.initialized = true;
+        return this.toGlobal(this.x[0], this.x[1]);
+      }
+      const dt = Math.max(0.01, (timestamp - this.lastTime) / 1000);
+      this.lastTime = timestamp;
+      const F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]];
+      const qP = 0.5*dt*dt, qV = dt, pN = 2.0;
+      const Q = [[qP*qP*pN,0,qP*qV*pN,0],[0,qP*qP*pN,0,qP*qV*pN],[qP*qV*pN,0,qV*qV*pN,0],[0,qP*qV*pN,0,qV*qV*pN]];
+      const xP = this.matMul(F, this.x);
+      const PP = this.matAdd(this.matMul(this.matMul(F, this.P), this.transpose(F)), Q);
+      const H = [[1,0,0,0],[0,1,0,0]], Ht = this.transpose(H);
+      const [zx, zy] = this.toLocal(lat, lon);
+      const y = [zx - xP[0], zy - xP[1]];
+      const r = accuracy * accuracy, R = [[r,0],[0,r]];
+      const HP = H.map(hr => { const res = [0,0,0,0]; for(let j=0;j<4;j++) for(let k=0;k<4;k++) res[j]+=hr[k]*PP[k][j]; return res; });
+      const S = [[0,0],[0,0]];
+      for(let i=0;i<2;i++) for(let j=0;j<2;j++) { for(let k=0;k<4;k++) S[i][j]+=HP[i][k]*Ht[k][j]; S[i][j]+=R[i][j]; }
+      const Si = this.inv2x2(S);
+      const PHt = Array.from({length:4},(_,i)=>{ const res=[0,0]; for(let j=0;j<2;j++) for(let k=0;k<4;k++) res[j]+=PP[i][k]*Ht[k][j]; return res; });
+      const K = PHt.map(row => [row[0]*Si[0][0]+row[1]*Si[1][0], row[0]*Si[0][1]+row[1]*Si[1][1]]);
+      this.x = xP.map((v,i) => v + K[i][0]*y[0] + K[i][1]*y[1]);
+      const KH = Array.from({length:4},(_,i)=>{ const res=[0,0,0,0]; for(let j=0;j<4;j++) for(let k=0;k<2;k++) res[j]+=K[i][k]*H[k][j]; return res; });
+      const I4 = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+      const IKH = this.matSub(I4, KH);
+      this.P = this.matMul(this.matMul(IKH, PP), this.transpose(IKH));
+      const KR = K.map(row => [row[0]*r, row[1]*r]);
+      const KRKt = Array.from({length:4},(_,i)=>{ const res=[0,0,0,0]; for(let j=0;j<4;j++) res[j]=KR[i][0]*K[j][0]+KR[i][1]*K[j][1]; return res; });
+      this.P = this.matAdd(this.P, KRKt);
+      return this.toGlobal(this.x[0], this.x[1]);
+    }
+    getEstimatedAccuracy() {
+      if (!this.initialized) return Infinity;
+      return Math.sqrt((this.P[0][0] + this.P[1][1]) / 2);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  //  Helpers
+  // ═══════════════════════════════════════
+  function toDMS(deg, isLat) {
+    const abs = Math.abs(deg), d = Math.floor(abs), mf = (abs-d)*60, m = Math.floor(mf), s = (mf-m)*60;
+    const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+    return `${dir}  ${d}°  ${String(m).padStart(2,'0')}′  ${s.toFixed(4)}″`;
+  }
+  function renderCoord(el, deg) {
+    const sign = deg < 0 ? '−' : '+', abs = Math.abs(deg);
+    const [i, d] = abs.toFixed(8).split('.');
+    el.innerHTML = `<span class="sign">${sign}</span>${i}<span class="dec">.${d}</span>`;
+  }
+  function distance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3, p1 = lat1*Math.PI/180, p2 = lat2*Math.PI/180;
+    const dp = (lat2-lat1)*Math.PI/180, dl = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function qualityGrade(acc) {
+    if (acc < 5) return 'S'; if (acc < 15) return 'A';
+    if (acc < 50) return 'B'; if (acc < 200) return 'C'; return 'D';
+  }
+
+  // ═══════════════════════════════════════
+  //  State
+  // ═══════════════════════════════════════
+  let watchId = null, isWatching = false, bestPosition = null;
+  let watchStartTime = 0, sampleCount = 0;
+  const TARGET_ACCURACY = 10;
+  let fallbackTimer = null, lastPos = null, kalman = null;
+  let filteredLat = 0, filteredLon = 0, accuracyHistory = [];
+
+  // ═══════════════════════════════════════
+  //  Renderers
+  // ═══════════════════════════════════════
+  function renderSparkline(data) {
+    if (!data.length) return;
+    const bar = document.getElementById('sparklineBar');
+    bar.style.display = 'block';
+    const svg = document.getElementById('sparklineSvg');
+    const W = 400, H = 40;
+    const maxVal = Math.max(...data, 20), range = maxVal || 1;
+    const pts = data.map((v, i) => {
+      const x = data.length === 1 ? W/2 : (i/(data.length-1))*W;
+      const y = H - 3 - (v/range)*(H-6);
+      return [x, y];
+    });
+    const pathD = pts.map((p,i) => `${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+    const areaD = pathD + ` L${pts[pts.length-1][0].toFixed(1)},${H} L${pts[0][0].toFixed(1)},${H} Z`;
+    const tY = H - 3 - (TARGET_ACCURACY/range)*(H-6);
+    svg.innerHTML = `
+      <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(42,143,255,0.12)"/><stop offset="100%" stop-color="rgba(42,143,255,0)"/>
+      </linearGradient></defs>
+      ${tY>0&&tY<H?`<line x1="0" y1="${tY.toFixed(1)}" x2="${W}" y2="${tY.toFixed(1)}" stroke="rgba(26,140,58,0.12)" stroke-width="1" stroke-dasharray="3 2"/>`:``}
+      <path d="${areaD}" fill="url(#sg)"/>
+      <path d="${pathD}" fill="none" stroke="#2a8fff" stroke-width="1.5" stroke-linecap="round"/>
+      ${pts.length>0?`<circle cx="${pts[pts.length-1][0].toFixed(1)}" cy="${pts[pts.length-1][1].toFixed(1)}" r="2.5" fill="#2a8fff"/>`:''}`;
+    document.getElementById('sparklineVal').textContent = `${data[data.length-1].toFixed(1)}m · ${data.length}pts`;
+  }
+
+  function renderChips(pos, elapsed, displayAcc, kalmanAcc, rawAcc, grade, isFinal, rawLat, rawLon, fLat, fLon) {
+    const row = document.getElementById('chipsRow');
+    const accCls = displayAcc <= 20 ? 'good' : displayAcc > 100 ? 'warn' : '';
+    const chips = [];
+    chips.push(`<div class="chip ${accCls}"><span class="chip-icon">◎</span> ±${displayAcc.toFixed(1)}m</div>`);
+    chips.push(`<div class="chip"><span class="chip-icon">⏱</span> ${(elapsed/1000).toFixed(1)}s${isFinal ? ' ✓' : ''}</div>`);
+    chips.push(`<div class="chip"><span class="chip-icon">📡</span> ${sampleCount}サンプル</div>`);
+    if (kalmanAcc < rawAcc) {
+      const improvement = ((1 - kalmanAcc/rawAcc) * 100).toFixed(0);
+      chips.push(`<div class="chip good"><span class="chip-icon">✦</span> KF +${improvement}%</div>`);
+    }
+    if (sampleCount > 1) {
+      const drift = distance(rawLat, rawLon, fLat, fLon);
+      if (drift > 0.1) { chips.push(`<div class="chip"><span class="chip-icon">Δ</span> ${drift.toFixed(1)}m補正</div>`); }
+    }
+    row.innerHTML = chips.join('');
+    row.offsetHeight; // reflow
+  }
+
+  function setStatus(phase, text) {
+    const pill = document.getElementById('statusPill');
+    pill.style.display = 'flex';
+    pill.className = 'status-pill ' + phase;
+    document.getElementById('statusLabel').textContent = text;
+  }
+
+  // ═══════════════════════════════════════
+  //  Core Logic
+  // ═══════════════════════════════════════
+  function acquire() {
+    if (!navigator.geolocation) { showErr('Geolocation APIに対応していません。'); return; }
     setLoading(true);
     errDiv.style.display = 'none';
 
-    const t0 = performance.now();
+    // Reset UI State
+    resultEl.classList.remove('expanded');
+    document.getElementById('explainArticle').style.display = 'none';
+    document.getElementById('showDetailsBtn').style.display = 'flex';
+    document.getElementById('iosWarning').style.display = 'none';
+    document.getElementById('statusPill').style.display = 'none';
+    document.getElementById('qualityBadge').style.display = 'none';
+    document.getElementById('sparklineBar').style.display = 'none';
+    document.getElementById('chipsRow').innerHTML = '';
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const elapsed = Math.round(performance.now() - t0);
-        setLoading(false);
-        showResult(pos, elapsed);
-      },
-      (err) => {
-        setLoading(false);
-        const msg = {
-          1: '位置情報へのアクセスが拒否されました。\nブラウザ設定で許可してください。',
-          2: '位置情報を取得できませんでした。\n（電波・ネットワークをご確認ください）',
-          3: 'タイムアウト。もう一度お試しください。',
-        }[err.code] || '不明なエラーが発生しました。';
-        showErr(msg);
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-    );
+    bestPosition = null; sampleCount = 0; lastPos = null;
+    kalman = new KalmanFilter2D();
+    filteredLat = 0; filteredLon = 0;
+    accuracyHistory = [];
+    watchStartTime = performance.now();
+    
+    // Hide buttons during tracking
+    document.getElementById('showDetailsBtn').style.display = 'none';
+    document.getElementById('fixedBottomWrap').style.display = 'none';
+    
+    startWatch(true);
   }
 
-  function showResult(pos, elapsed) {
-    const c   = pos.coords;
-    const lat = c.latitude;
-    const lon = c.longitude;
-    const acc = c.accuracy;
-    const alt = c.altitude;
-    const altAcc = c.altitudeAccuracy;
-    const spd = c.speed;
-    const hdg = c.heading;
-    const ts  = pos.timestamp;
+  let acqTimerId = null;
+  
+  function startAcqPopup() {
+    if (acqTimerId !== null) return;
+    document.getElementById('acqOverlay').style.display = 'flex';
+    let remainingTime = 60;
+    document.getElementById('acqTimer').textContent = remainingTime.toFixed(1) + 's';
+    
+    let startTime = performance.now();
+    acqTimerId = setInterval(() => {
+      let now = performance.now();
+      let diff = (now - startTime) / 1000;
+      remainingTime = Math.max(0, 60 - diff);
+      document.getElementById('acqTimer').textContent = remainingTime.toFixed(1) + 's';
+      if (remainingTime <= 0) {
+        stopAndFinalize();
+      }
+    }, 100);
+  }
 
-    renderCoord(document.getElementById('latNum'), lat);
-    renderCoord(document.getElementById('lonNum'), lon);
-    document.getElementById('latDms').textContent = toDMS(lat, true);
-    document.getElementById('lonDms').textContent = toDMS(lon, false);
+  function stopAndFinalize() {
+    if (acqTimerId) { clearInterval(acqTimerId); acqTimerId = null; }
+    document.getElementById('acqOverlay').style.display = 'none';
+    stopWatch();
+    
+    document.getElementById('showDetailsBtn').style.display = 'flex';
+    document.getElementById('fixedBottomWrap').style.display = 'flex';
+    
+    const kalmanAcc = kalman ? kalman.getEstimatedAccuracy() : 0;
+    setStatus('locked', `測位完了  ±${kalmanAcc.toFixed(1)}m`);
+    
+    if (lastPos && kalman) {
+      const elapsed = Math.round(performance.now() - watchStartTime);
+      showResult(lastPos, elapsed, filteredLat, filteredLon, false, true);
+    }
+  }
 
-    const accCls = acc <= 20 ? 'good' : acc <= 100 ? '' : 'warn';
-    const accTxt = acc <= 20 ? `${acc.toFixed(1)} m  高精度`
-                 : acc <= 100 ? `${acc.toFixed(1)} m`
-                 : `${acc.toFixed(1)} m  低精度`;
+  function startWatch(highAccuracy) {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    isWatching = true;
+    setStatus('searching', '衛星探索中...');
+    if (highAccuracy) {
+      fallbackTimer = setTimeout(() => {
+        if (sampleCount === 0) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              if (sampleCount === 0) {
+                kalman = new KalmanFilter2D();
+                const [fLat, fLon] = kalman.update(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.timestamp);
+                filteredLat = fLat; filteredLon = fLon;
+                accuracyHistory.push(pos.coords.accuracy);
+                showResult(pos, Math.round(performance.now() - watchStartTime), fLat, fLon, true);
+              }
+            },
+            () => {},
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+          );
+        }
+      }, 5000);
+    }
+    watchId = navigator.geolocation.watchPosition(handlePosition, handleError, {
+      enableHighAccuracy: highAccuracy, timeout: 20000, maximumAge: 0
+    });
+  }
 
-    const rows = [
-      logRow('取得日時',      new Date(ts).toLocaleString('ja-JP')),
-      logRow('elapsed',       `${elapsed} ms`),
-      logRow('水平精度',      accTxt, accCls),
-      logRow('緯度 (raw)',    lat.toFixed(10) + ' °'),
-      logRow('経度 (raw)',    lon.toFixed(10) + ' °'),
-      logRow('標高',          alt  != null ? alt.toFixed(2) + ' m' : 'N/A'),
-      logRow('標高精度',      altAcc != null ? altAcc.toFixed(2) + ' m' : 'N/A'),
-      logRow('速度',          spd != null ? spd.toFixed(2) + ' m/s' : 'N/A'),
-      logRow('方位',          hdg  != null ? hdg.toFixed(1) + ' °' : 'N/A'),
-      logRow('取得方式',      'navigator.geolocation'),
-      logRow('enableHighAccuracy', 'true'),
-      logRow('maximumAge',    '0 ms  (キャッシュなし)'),
-    ];
+  function handlePosition(pos) {
+    const elapsed = Math.round(performance.now() - watchStartTime);
+    const c = pos.coords;
+    if (c.accuracy > 2000) document.getElementById('iosWarning').style.display = 'block';
+    else document.getElementById('iosWarning').style.display = 'none';
 
-    document.getElementById('logTable').innerHTML = rows.join('');
+    if (lastPos && pos.timestamp > lastPos.timestamp) {
+      const dist = distance(lastPos.coords.latitude, lastPos.coords.longitude, c.latitude, c.longitude);
+      const timeDiffH = (pos.timestamp - lastPos.timestamp) / 3600000;
+      if (timeDiffH > 0 && (dist/1000)/timeDiffH > 300) { console.warn("Outlier rejected"); return; }
+    }
+    lastPos = pos; sampleCount++;
 
-    idleEl.style.display  = 'none';
+    const [fLat, fLon] = kalman.update(c.latitude, c.longitude, c.accuracy, pos.timestamp);
+    filteredLat = fLat; filteredLon = fLon;
+    const kalmanAcc = kalman.getEstimatedAccuracy();
+    accuracyHistory.push(kalmanAcc);
+    if (!bestPosition || c.accuracy < bestPosition.coords.accuracy) bestPosition = pos;
+    setLoading(false);
+
+    if (kalmanAcc <= TARGET_ACCURACY) setStatus('locked', `高精度ロック  ±${kalmanAcc.toFixed(1)}m`);
+    else if (sampleCount >= 2) setStatus('converging', `収束中... ±${kalmanAcc.toFixed(1)}m`);
+    else setStatus('searching', `初期測位... ±${c.accuracy.toFixed(0)}m`);
+
+    if (sampleCount === 1) startAcqPopup();
+    
+    showResult(pos, elapsed, fLat, fLon, false, false);
+  }
+
+  function stopWatch() {
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    isWatching = false;
+    if (fallbackTimer) clearTimeout(fallbackTimer);
+  }
+
+  function handleError(err) {
+    if (sampleCount === 0) {
+      setLoading(false); stopWatch();
+      const msg = { 1:'位置情報へのアクセスが拒否されました。\n設定で許可してください。',
+        2:'位置情報を取得できませんでした。\n（電波状況等をご確認ください）',
+        3:'タイムアウト。もう一度お試しください。' }[err.code] || '不明なエラーが発生しました。';
+      showErr(msg);
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { if (isWatching && watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; } }
+    else { if (isWatching && watchId === null) startWatch(true); }
+  });
+
+  // ═══════════════════════════════════════
+  //  UI Interaction
+  // ═══════════════════════════════════════
+  function showResult(pos, elapsed, fLat, fLon, isFallback = false, isFinal = false) {
+    const c = pos.coords, rawLat = c.latitude, rawLon = c.longitude, acc = c.accuracy;
+    const kalmanAcc = kalman.getEstimatedAccuracy();
+    const displayAcc = Math.min(acc, kalmanAcc);
+    const grade = qualityGrade(displayAcc);
+
+    // Big coordinates
+    renderCoord(document.getElementById('latNum'), fLat);
+    renderCoord(document.getElementById('lonNum'), fLon);
+    document.getElementById('latDms').textContent = toDMS(fLat, true);
+    document.getElementById('lonDms').textContent = toDMS(fLon, false);
+
+    // Fixed Header coordinates (pre-fill)
+    renderCoord(document.getElementById('fhLat'), fLat);
+    renderCoord(document.getElementById('fhLon'), fLon);
+
+    // Quality badge
+    const badge = document.getElementById('qualityBadge');
+    badge.style.display = 'flex';
+    badge.textContent = grade;
+    badge.className = 'quality-badge quality-' + grade;
+
+    // Info chips & Sparkline
+    renderChips(pos, elapsed, displayAcc, kalmanAcc, acc, grade, isFinal, rawLat, rawLon, fLat, fLon);
+    renderSparkline(accuracyHistory);
+
+    idleEl.style.display = 'none';
     resultEl.style.display = 'flex';
+  }
+
+  function showDetails() {
+    // Hide details button and trigger css transition on result wrap
+    document.getElementById('showDetailsBtn').style.display = 'none';
+    resultEl.classList.add('expanded');
+    
+    // Show article
+    document.getElementById('explainArticle').style.display = 'block';
+
+    // Reset animations for data components so they pop in beautifully
+    const badge = document.getElementById('qualityBadge');
+    badge.style.animation = 'none'; badge.offsetHeight; badge.style.animation = null;
+
+    document.querySelectorAll('.chip').forEach(c => {
+      c.style.animation = 'none'; c.offsetHeight; c.style.animation = null;
+    });
+
+    const bar = document.getElementById('sparklineBar');
+    bar.style.animation = 'none'; bar.offsetHeight; bar.style.animation = null;
   }
 
   function setLoading(on) {
@@ -348,16 +808,242 @@
     btnTxt.textContent = on ? '取得中...' : '現在地を取得';
   }
 
-  function showErr(msg) {
-    errDiv.textContent   = msg;
-    errDiv.style.display = 'block';
-  }
+  function showErr(msg) { errDiv.textContent = msg; errDiv.style.display = 'block'; }
 
   function reset() {
+    stopWatch();
+    disconnectGNSS();
+    
+    if (acqTimerId) { clearInterval(acqTimerId); acqTimerId = null; }
+    document.getElementById('acqOverlay').style.display = 'none';
+    
+    resultEl.classList.remove('expanded');
     resultEl.style.display = 'none';
-    idleEl.style.display   = 'flex';
-    errDiv.style.display   = 'none';
+    idleEl.style.display = 'flex';
+    errDiv.style.display = 'none';
+    document.getElementById('iosWarning').style.display = 'none';
+    document.getElementById('gnssPanel').style.display = 'none';
     setLoading(false);
+  }
+
+  // ═══════════════════════════════════════
+  //  Phase 3: NMEA Parser
+  // ═══════════════════════════════════════
+  function nmeaChecksum(sentence) {
+    let cs = 0;
+    for (let i = 1; i < sentence.length; i++) {
+      if (sentence[i] === '*') break;
+      cs ^= sentence.charCodeAt(i);
+    }
+    return cs.toString(16).toUpperCase().padStart(2, '0');
+  }
+
+  function nmeaCoordToDeg(raw, dir) {
+    if (!raw) return null;
+    const dotIdx = raw.indexOf('.');
+    const degLen = dotIdx - 2;
+    const deg = parseFloat(raw.substring(0, degLen));
+    const min = parseFloat(raw.substring(degLen));
+    let result = deg + min / 60;
+    if (dir === 'S' || dir === 'W') result = -result;
+    return result;
+  }
+
+  const FIX_LABELS = { 0:'No Fix', 1:'単独', 2:'DGPS', 4:'RTK Fixed', 5:'RTK Float' };
+  const FIX_CLASSES = { 0:'fix-none', 1:'fix-single', 2:'fix-dgps', 4:'fix-rtk-fixed', 5:'fix-rtk-float' };
+
+  let gnssData = { lat:null, lon:null, alt:null, fix:0, sats:0, hdop:null, latErr:null, lonErr:null };
+  let gnssStreamLines = [];
+
+  function parseNMEA(line) {
+    line = line.trim();
+    if (!line.startsWith('$')) return;
+    const starIdx = line.indexOf('*');
+    if (starIdx > 0) {
+      const expected = line.substring(starIdx + 1).trim();
+      const actual = nmeaChecksum(line.substring(0, starIdx));
+      if (expected.toUpperCase() !== actual) return;
+    }
+    const body = starIdx > 0 ? line.substring(1, starIdx) : line.substring(1);
+    const f = body.split(',');
+    const type = f[0].substring(f[0].length - 3);
+
+    if (type === 'GGA') {
+      gnssData.lat = nmeaCoordToDeg(f[2], f[3]);
+      gnssData.lon = nmeaCoordToDeg(f[4], f[5]);
+      gnssData.fix = parseInt(f[6]) || 0;
+      gnssData.sats = parseInt(f[7]) || 0;
+      gnssData.hdop = f[8] ? parseFloat(f[8]) : null;
+      gnssData.alt = f[9] ? parseFloat(f[9]) : null;
+      if (gnssData.lat !== null && gnssData.lon !== null) {
+        onGNSSPosition();
+      }
+    } else if (type === 'GST') {
+      gnssData.latErr = f[6] ? parseFloat(f[6]) : null;
+      gnssData.lonErr = f[7] ? parseFloat(f[7]) : null;
+    }
+
+    gnssStreamLines.push(line);
+    if (gnssStreamLines.length > 50) gnssStreamLines.shift();
+    updateGNSSUI();
+  }
+
+  function onGNSSPosition() {
+    const acc = gnssData.hdop ? gnssData.hdop * 2.5 : 5;
+    const ts = Date.now();
+    if (!kalman) kalman = new KalmanFilter2D();
+    const [fLat, fLon] = kalman.update(gnssData.lat, gnssData.lon, acc, ts);
+    filteredLat = fLat; filteredLon = fLon;
+    sampleCount++;
+    accuracyHistory.push(kalman.getEstimatedAccuracy());
+    const elapsed = Math.round(performance.now() - watchStartTime);
+    const kalmanAcc = kalman.getEstimatedAccuracy();
+    const displayAcc = Math.min(acc, kalmanAcc);
+    const grade = qualityGrade(displayAcc);
+
+    renderCoord(document.getElementById('latNum'), fLat);
+    renderCoord(document.getElementById('lonNum'), fLon);
+    document.getElementById('latDms').textContent = toDMS(fLat, true);
+    document.getElementById('lonDms').textContent = toDMS(fLon, false);
+    renderCoord(document.getElementById('fhLat'), fLat);
+    renderCoord(document.getElementById('fhLon'), fLon);
+
+    const badge = document.getElementById('qualityBadge');
+    badge.style.display = 'flex'; badge.textContent = grade;
+    badge.className = 'quality-badge quality-' + grade;
+
+    const fixLabel = FIX_LABELS[gnssData.fix] || `Fix ${gnssData.fix}`;
+    if (gnssData.fix === 4) setStatus('locked', `RTK Fixed  ${fixLabel}`);
+    else if (gnssData.fix === 5) setStatus('converging', `RTK Float  ${fixLabel}`);
+    else if (gnssData.fix >= 1) setStatus('searching', `${fixLabel}  ±${displayAcc.toFixed(1)}m`);
+
+    renderSparkline(accuracyHistory);
+    idleEl.style.display = 'none'; resultEl.style.display = 'flex';
+  }
+
+  function updateGNSSUI() {
+    const d = gnssData;
+    const fixQ = d.fix;
+    const fixLabel = FIX_LABELS[fixQ] || '—';
+    const fixCls = FIX_CLASSES[fixQ] || 'fix-none';
+    document.getElementById('gnssFixType').innerHTML = `<span class="fix-badge ${fixCls}">${fixLabel}</span>`;
+    document.getElementById('gnssSats').textContent = d.sats || '—';
+    const hdopEl = document.getElementById('gnssHdop');
+    if (d.hdop !== null) {
+      hdopEl.textContent = d.hdop.toFixed(1);
+      hdopEl.className = 'gnss-cell-value ' + (d.hdop < 1.5 ? 'good' : d.hdop < 3 ? '' : 'warn');
+    }
+    document.getElementById('gnssAlt').textContent = d.alt !== null ? d.alt.toFixed(1) + 'm' : '—';
+    document.getElementById('gnssLatErr').textContent = d.latErr !== null ? d.latErr.toFixed(3) + 'm' : '—';
+    document.getElementById('gnssLonErr').textContent = d.lonErr !== null ? d.lonErr.toFixed(3) + 'm' : '—';
+    const streamEl = document.getElementById('gnssStream');
+    streamEl.textContent = gnssStreamLines.slice(-15).join('\n');
+    streamEl.scrollTop = streamEl.scrollHeight;
+  }
+
+  // ═══════════════════════════════════════
+  //  Phase 3: Web Serial API
+  // ═══════════════════════════════════════
+  let serialPort = null, serialReader = null, serialReading = false;
+
+  async function connectSerial() {
+    try {
+      serialPort = await navigator.serial.requestPort();
+      await serialPort.open({ baudRate: 115200 });
+      serialReading = true;
+      watchStartTime = performance.now();
+      kalman = new KalmanFilter2D();
+      sampleCount = 0; accuracyHistory = []; gnssStreamLines = [];
+      gnssData = { lat:null, lon:null, alt:null, fix:0, sats:0, hdop:null, latErr:null, lonErr:null };
+      document.getElementById('gnssPanel').style.display = 'block';
+      document.getElementById('gnssStatusDot').className = 'gnss-status-dot';
+      document.getElementById('gnssStatusText').textContent = 'Serial接続中';
+      document.getElementById('gnssDisconnect').style.display = 'inline';
+      setStatus('searching', '外部GNSS: データ受信中...');
+      idleEl.style.display = 'none'; resultEl.style.display = 'flex';
+
+      const decoder = new TextDecoderStream();
+      const readableStreamClosed = serialPort.readable.pipeTo(decoder.writable);
+      serialReader = decoder.readable.getReader();
+      let buf = '';
+      while (serialReading) {
+        const { value, done } = await serialReader.read();
+        if (done) break;
+        buf += value;
+        const lines = buf.split(/\r?\n/);
+        buf = lines.pop();
+        for (const l of lines) { if (l.startsWith('$')) parseNMEA(l); }
+      }
+    } catch (e) {
+      if (e.name !== 'NotFoundError') showErr('Serial接続エラー: ' + e.message);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  //  Phase 3: Web Bluetooth API
+  // ═══════════════════════════════════════
+  let btDevice = null, btChar = null;
+  const NORDIC_UART_SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const NORDIC_UART_RX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+  async function connectBluetooth() {
+    try {
+      btDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [NORDIC_UART_SVC] }],
+        optionalServices: [NORDIC_UART_SVC, 0x1819]
+      });
+      const server = await btDevice.gatt.connect();
+      watchStartTime = performance.now();
+      kalman = new KalmanFilter2D();
+      sampleCount = 0; accuracyHistory = []; gnssStreamLines = [];
+      gnssData = { lat:null, lon:null, alt:null, fix:0, sats:0, hdop:null, latErr:null, lonErr:null };
+      document.getElementById('gnssPanel').style.display = 'block';
+      document.getElementById('gnssStatusDot').className = 'gnss-status-dot';
+      document.getElementById('gnssStatusText').textContent = 'BLE接続中';
+      document.getElementById('gnssDisconnect').style.display = 'inline';
+      setStatus('searching', '外部GNSS (BLE): データ受信中...');
+      idleEl.style.display = 'none'; resultEl.style.display = 'flex';
+
+      let svc;
+      try { svc = await server.getPrimaryService(NORDIC_UART_SVC); }
+      catch { svc = await server.getPrimaryService(0x1819); }
+      btChar = await svc.getCharacteristic(NORDIC_UART_RX);
+      let buf = '';
+      btChar.addEventListener('characteristicvaluechanged', (e) => {
+        const chunk = new TextDecoder().decode(e.target.value);
+        buf += chunk;
+        const lines = buf.split(/\r?\n/);
+        buf = lines.pop();
+        for (const l of lines) { if (l.startsWith('$')) parseNMEA(l); }
+      });
+      await btChar.startNotifications();
+    } catch (e) {
+      if (e.name !== 'NotFoundError') showErr('BLE接続エラー: ' + e.message);
+    }
+  }
+
+  async function connectGNSS(method) {
+    if (method === 'serial' && 'serial' in navigator) await connectSerial();
+    else if (method === 'bluetooth' && 'bluetooth' in navigator) await connectBluetooth();
+    else if ('serial' in navigator) await connectSerial();
+    else if ('bluetooth' in navigator) await connectBluetooth();
+    else showErr('このブラウザはWeb Serial / Web Bluetooth APIに対応していません。');
+  }
+
+  async function disconnectGNSS() {
+    serialReading = false;
+    if (serialReader) { try { await serialReader.cancel(); } catch {} serialReader = null; }
+    if (serialPort) { try { await serialPort.close(); } catch {} serialPort = null; }
+    if (btChar) { try { await btChar.stopNotifications(); } catch {} btChar = null; }
+    if (btDevice && btDevice.gatt.connected) { try { btDevice.gatt.disconnect(); } catch {} btDevice = null; }
+    document.getElementById('gnssStatusDot').className = 'gnss-status-dot off';
+    document.getElementById('gnssStatusText').textContent = '切断済み';
+    document.getElementById('gnssDisconnect').style.display = 'none';
+  }
+
+  // Feature detection: show GNSS button if supported
+  if ('serial' in navigator || 'bluetooth' in navigator) {
+    document.getElementById('gnssBtn').style.display = 'flex';
   }
 </script>
 </body>
