@@ -51,7 +51,7 @@
       margin-bottom: 56px;
     }
     .coord-tag {
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 500;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -216,13 +216,13 @@
   <div id="result">
     <!-- LAT -->
     <div class="coord-block">
-      <span class="coord-tag">Latitude — 緯度</span>
+      <span class="coord-tag">緯度</span>
       <div class="coord-num" id="latNum"></div>
       <div class="coord-dms" id="latDms"></div>
     </div>
     <!-- LON -->
     <div class="coord-block">
-      <span class="coord-tag">Longitude — 経度</span>
+      <span class="coord-tag">経度</span>
       <div class="coord-num" id="lonNum"></div>
       <div class="coord-dms" id="lonDms"></div>
     </div>
@@ -317,9 +317,9 @@
     document.getElementById('lonDms').textContent = toDMS(lon, false);
 
     const accCls = acc <= 20 ? 'good' : acc <= 100 ? '' : 'warn';
-    const accTxt = acc <= 20 ? `${acc.toFixed(1)} m  ✓ 高精度`
+    const accTxt = acc <= 20 ? `${acc.toFixed(1)} m  高精度`
                  : acc <= 100 ? `${acc.toFixed(1)} m`
-                 : `${acc.toFixed(1)} m  ⚠ 低精度`;
+                 : `${acc.toFixed(1)} m  低精度`;
 
     const rows = [
       logRow('取得日時',      new Date(ts).toLocaleString('ja-JP')),
