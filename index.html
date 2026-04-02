@@ -883,21 +883,25 @@
       color: #fff;
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
+
     .acq-g.active-A {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
       color: #fff;
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
+
     .acq-g.active-B {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: #fff;
       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
     }
+
     .acq-g.active-C {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       color: #fff;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
+
     .acq-g.active-D {
       background: linear-gradient(135deg, #6b7280, #4b5563);
       color: #fff;
@@ -1083,90 +1087,83 @@
       </div>
 
       <div class="explain-section">
-        <h2 class="explain-h2">計測データの見方</h2>
-        <p class="explain-p">画面上部に表示されている各データの意味は以下の通りです。</p>
+        <h2 class="explain-h2">計測データの読み方</h2>
+        <p class="explain-p">画面上部に表示される各指標は、現在の測位状態を評価したものです。</p>
         <p class="explain-p">
-          • <strong>品質スコア（アルファベット）</strong>:
-          総合的な測位精度のランクです。S（最高精度・5m未満）、A（高精度・15m未満）、B（実用・50m未満）、C（低精度）、D（参考値）の5段階で評価されます。<br>
-          • <strong>◎ ±XXm</strong>: 現在の座標に含まれると推定される誤差半径（メートル）です。<br>
-          • <strong>⏱ XX.Xs</strong>: 初回の測位開始から現在までに経過した時間です。<br>
-          • <strong>📡 Xサンプル</strong>: ここまでの計算に利用された観測データの数です。<br>
-          • <strong>✦ KF +XX%</strong>: カルマンフィルタによる補正によって、デバイスからの生データよりもどれだけ精度が向上したか（ノイズが除去されたか）の割合を示します。<br>
-          • <strong>精度推移グラフ</strong>: 観測開始から現在にいたるまでの誤差半径（±XXm）の推移を視覚化したものです。右に行くほど値が小さくなり、精度が「収束」していく様子がわかります。
-        </p>
-      </div>
-
-      <!-- Concepts -->
-      <div class="explain-section">
-        <h2 class="explain-h2">idokeidoの設計思想</h2>
-        <p class="explain-p">「idokeido（緯度経度）」は、モダンブラウザが提供する <strong>W3C Geolocation API</strong>
-          のポテンシャルを極限まで引き出し、最高精度の座標を最も直感的かつ美しく取得・表示するための実験的Webアプリケーションです。</p>
-        <p class="explain-p">単なる現在地の取得にとどまらず、デバイスのGNSSやWi-Fi測位から得られる生のセンサーデータ（Raw
-          Data）に内在するノイズを数学的アプローチで除去し、信頼に足る強固な座標データへと「収束」していく過程を可視化しています。GPSの制約やOSの抽象化レイヤーを意識することで、位置情報技術の深淵に触れることができます。
+          • <strong>品質スコア</strong>: 精度を5段階（S:最高、A:高、B:実用、C:低、D:参考）でランク付け。<br>
+          • <strong>◎ ±XXm</strong>: 推定される誤差の半径。値が小さいほど正確です。<br>
+          • <strong>⏱ XX.Xs</strong>: 測位を開始してからの経過時間。<br>
+          • <strong>📡 Xサンプル</strong>: 計算に使用された観測データの蓄積数。<br>
+          • <strong>✦ KF +XX%</strong>: フィルタ処理によって、デバイスの生データからどれだけ精度が改善したかを示す指標です。<br>
+          • <strong>精度推移グラフ</strong>: 誤差が時間とともに「収束」していく様子を可視化しています。
         </p>
       </div>
 
       <div class="explain-section">
-        <h2 class="explain-h2">2次元カルマンフィルタによる平滑化</h2>
-        <p class="explain-p">GPSから得られる座標には、大気圏の遅延や建物によるマルチパス（反射）による誤差が必ず含まれます。<br>本システムでは、JavaScript上でゼロからインライン実装された
-          <strong>Kalman Filter（カルマンフィルタ）</strong> をリアルタイムに適用しています。</p>
+        <h2 class="explain-h2">idokeido とは</h2>
+        <p class="explain-p">「idokeido（イドケイド）」は、ブラウザが持つ位置情報取得（Geolocation API）の能力を最大限に活用し、より正確で信頼できる座標を導き出すためのツールです。</p>
         <p class="explain-p">
-          状態ベクトルに「座標（x,y）」と「速度（vx,vy）」の4次元を持たせ、毎回の測定値とその測定精度（Accuracy）を観測ノイズとして動的モデルに適用します。これにより、急激な座標の「飛び」や「ジグザグ移動」を抑制し、実際の真の移動に沿った極めて滑らかな座標（上部情報チップでの
-          <span
-            class="code-inline">Δ補正</span>：フィルタにより生データから空間的にどれだけ座標が補正されたかを示す距離）を導き出します。複雑な行列演算をブラウザ内で自己完結させている点が技術的な独自性です。
+          スマートフォンのGPSには、建物の反射やノイズが常に含まれています。本アプリはそれらのノイズを数学的なフィルタで取り除き、単なる「点」ではなく、データに基づいた「確かな位置」を表示することを目指しています。</p>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">高精度化のしくみ（カルマンフィルタ）</h2>
+        <p class="explain-p">本システムは、<strong>2次元カルマンフィルタ</strong>という、航空宇宙や自動運転にも使われるアルゴリズムを採用しています。</p>
+        <p class="explain-p">
+          デバイスから送られてくる「生の座標」には常に揺らぎ（ノイズ）があります。フィルタは、移動速度や測定誤差の大きさをリアルタイムに計算し、突発的な座標の「飛び」や「ジグザグ」を抑制。実際の物理的な動きに沿った滑らかな座標へと補正を行います。
         </p>
 
-        <h3 class="explain-h2" style="font-size: 14px; margin-top: 24px;">計算の数学的基盤</h3>
+        <details
+          style="margin-top: 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 12px; background: rgba(0,0,0,0.01);">
+          <summary style="font-size: 13px; font-weight: 500; color: #1d1d1f; cursor: pointer;">技術詳細・数学的基盤の表示</summary>
+          <div style="margin-top: 12px;">
+            <p class="explain-p" style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">1. 座標系と状態定義</p>
+            <p class="explain-p" style="font-size: 12px;">地球上の緯度経度を局所的な平面直交座標系（メートル単位）に射影し、状態ベクトルを <strong>x =
+                [p<sub>x</sub>, p<sub>y</sub>, v<sub>x</sub>, v<sub>y</sub>]<sup>T</sup></strong>
+              と定義。位置だけでなく「速度」を推定することで、慣性を考慮した滑らかな推移を実現しています。</p>
+
+            <p class="explain-p" style="font-size: 12px; font-weight: bold; margin-bottom: 4px; margin-top: 12px;">2.
+              予測と更新のループ</p>
+            <p class="explain-p"
+              style="font-family: 'M PLUS Code Latin', monospace; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 8px;">
+              <strong>Predict:</strong><br>
+              x<sub>k|k-1</sub> = F·x<sub>k-1|k-1</sub> （運動モデルによる予測）<br>
+              P<sub>k|k-1</sub> = F·P<sub>k-1|k-1</sub>·F<sup>T</sup> + Q （不確実性の増大）<br><br>
+              <strong>Update:</strong><br>
+              K = P<sub>k|k-1</sub>·H<sup>T</sup>(H·P<sub>k|k-1</sub>·H<sup>T</sup> + R)<sup>-1</sup> （カルマンゲイン）<br>
+              x<sub>k|k</sub> = x<sub>k|k-1</sub> + K(z<sub>k</sub> - H·x<sub>k|k-1</sub>) （観測値による補正）<br>
+              P<sub>k|k</sub> = (I - K·H)·P<sub>k|k-1</sub> （不確実性の圧縮）
+            </p>
+
+            <p class="explain-p" style="font-size: 12px; font-weight: bold; margin-bottom: 4px; margin-top: 12px;">3.
+              ノイズパラメータの動的最適化</p>
+            <p class="explain-p" style="font-size: 12px;">観測ノイズ行列 <strong>R</strong>
+              にはOSが提示する「Accuracy（期待精度）」を2乗した分散値を代入。プロセスノイズ <strong>Q</strong>
+              には微小な加速度成分（約0.1m/s²）を見込むことで、静止時の細かな揺れ（ハンチング）を抑えつつ、移動開始時の追従性を両立させています。</p>
+
+            <p class="explain-p"
+              style="font-size: 11px; color: rgba(0,0,0,0.4); margin-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px;">
+              ※計算には JavaScript による 4×4 行列演算ライブラリを自前実装し、ブラウザメインスレッド上で低遅延実行しています。</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="explain-section">
+        <h2 class="explain-h2">測位の収束と判定プロセス</h2>
+        <p class="explain-p">測位を開始した直後は、数千メートルの大きな誤差が出ることがありますが、しばらく待つことで精度が徐々に高まっていきます（収束現象）。</p>
         <p class="explain-p">
-          本システムは、等速直線運動を前提とした物理モデルを採用しています。<br>
-          状態ベクトルを <strong>x = [p<sub>x</sub>, p<sub>y</sub>, v<sub>x</sub>, v<sub>y</sub>]<sup>T</sup></strong>
-          と定義します。ここでの計算は、デバイス側から新しい位置情報（OSやハードウェアに依存した数秒に1度の不定期なデータ）が受信されるたびに実行されます。
-        </p>
-        <p class="explain-p">
-          まず、<strong>F</strong> を測定間隔（Δt）に応じた状態遷移モデル、<strong>P</strong> を計算された推定誤差（不確実性）を表す共分散行列、<strong>Q</strong>
-          を予期しない加速度などを示すプロセスノイズと定義します。これらを用いて、前回から現在までの座標の「予測」を行います。
-        </p>
-        <p class="explain-p"
-          style="font-family: 'M PLUS Code Latin', monospace; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px;">
-          <strong>予測ステップ (Predict):</strong><br>
-          x<sub>k|k-1</sub> = F · x<sub>k-1|k-1</sub><br>
-          P<sub>k|k-1</sub> = F · P<sub>k-1|k-1</sub> · F<sup>T</sup> + Q<br>
-        </p>
-        <p class="explain-p">
-          次に、<strong>z<sub>k</sub></strong> をセンサから新しく得られた観測値（局所座標）、<strong>R</strong>
-          をOSから提供されるAccuracyに基づく観測ノイズの共分散行列と定義します。<br>
-          この時、<strong>K</strong>（カルマンゲイン）と呼ばれる重み係数を計算し、「予測した位置」と「センサが示した位置」のどちらをどれだけ信用するかを理論的に決定し、「更新（補正）」を行います。
-        </p>
-        <p class="explain-p"
-          style="font-family: 'M PLUS Code Latin', monospace; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px;">
-          <strong>更新ステップ (Update):</strong><br>
-          K = P<sub>k|k-1</sub> · H<sup>T</sup> · (H · P<sub>k|k-1</sub> · H<sup>T</sup> + R)<sup>-1</sup><br>
-          x<sub>k|k</sub> = x<sub>k|k-1</sub> + K · (z<sub>k</sub> - H · x<sub>k|k-1</sub>)<br>
-          P<sub>k|k</sub> = (I - K · H) · P<sub>k|k-1</sub>
+          本アプリでは、推定誤差が一定以下（10m以内）になるまで継続的に観測を行います。<strong>精度が十分に「収束」したと確信できたタイミングで、ボタンを押して結果を確定させてください。</strong>もし精度がなかなか上がらない場合は、空が広く見える場所へ移動し「再取得（Retry）」を試みるのが効果的です。
         </p>
       </div>
 
       <div class="explain-section">
-        <h2 class="explain-h2">精度収束ロジックと除外処理</h2>
-        <p class="explain-p">初回の測位データは誤差が数千メートルに及ぶこともあり、システムは直ちに結果を確定しません。内部では <code>watchPosition()</code>
-          を利用して継続的な観測を行い、カルマンフィルタによる推定誤差が <span class="code-inline">10m</span>
-          以下になるまで収束プロセスを継続します。ただし、いつまでも結果が出ない状態を防ぐため、観測開始から <span class="code-inline">10秒</span>
-          経過した時点での最良値を最終結果として採用して確定させるよう設計されています。</p>
+        <h2 class="explain-h2">プライバシーとiOSでの制約</h2>
+        <p class="explain-p"><strong>プライバシー保護:</strong> 測位や計算処理はすべてあなたのブラウザ内で完結しており、位置情報が外部サーバーへ送信されることはありません。</p>
         <p class="explain-p">
-          また、時速300kmを超えるような物理的に不可能な移動（座標ジャンプ現象）が検出された場合は、異常値として即座に破棄する堅牢なロジックを搭載しています。これにより、ビルの谷間など厳しいマルチパス環境下での突発的なノイズを効果的に排除します。
+          <strong>iOSの精度制限:</strong> iOSで「正確な位置情報」がオフになっている場合、OSによって意図的に誤差が加えられます。この状態では品質スコアが低く表示され、システムから警告が通知されます。
         </p>
       </div>
 
-      <div class="explain-section">
-        <h2 class="explain-h2">プライバシー保護と制約</h2>
-        <p class="explain-p">
-          本番環境において、測位からフィルタリングまでの計算処理はすべてクライアント（あなたのブラウザ）内で完全に完結して実行されます。位置情報がいかなる外部サーバーにも送信されることは一切ありません。</p>
-        <p class="explain-p">
-          ※iOS環境においては、OSのプライバシー設定において「正確な位置情報」がオフになっている場合、OS側で意図的に大幅な誤差が加えられます。システムはこの特有の誤差分布を検知し、品質スコアを低下させて警告を表示します。これはプライバシー保護機能と利便性のトレードオフを可視化する試みでもあります。
-        </p>
-      </div>
-
-      <!-- Phase 3: External GNSS -->
       <div class="gnss-section" id="gnssPanel" style="display:none;">
         <h2 class="explain-h2">外部GNSSレシーバー</h2>
         <div class="gnss-status" id="gnssStatus">
@@ -1207,18 +1204,49 @@
       </div>
 
       <div class="explain-section" id="gnssExplainSection">
-        <h2 class="explain-h2">Phase 3: 外部GNSS連携</h2>
+        <h2 class="explain-h2">外部GNSS連携（試験的）</h2>
+        <p class="explain-p">Web Serial/Bluetooth APIを介して、高感度外部GNSSレシーバー（u-blox製等）から直接データを読み取ります。</p>
         <p class="explain-p">
-          この機能は極めて<strong>試験的（Experimental）</strong>であり、通信の切断やパースエラーなど、<strong>圧倒的に不安定な挙動</strong>を示す可能性があります。実用的なナビゲーション用途ではなく、技術実証を主な目的としています。
+          ブラウザ標準の位置情報機能をバイパスし、生のNMEAデータを解析することで、衛星の配置状況（HDOP）やRTK測位の状態など、プロフェッショナルな情報を表示します。良好な条件下ではセンチメートル級の精度を追求することも可能です。
         </p>
-        <p class="explain-p">Web Serial API または Web Bluetooth API を使用して、u-blox ZED-F9P 等の外部GNSSレシーバーに直接接続します。ブラウザの標準的な
-          Geolocation API による抽象化を完全にバイパスし、生の NMEA センテンスを JavaScript で直接解析することで、以下のような専門的な空間データへ直接アクセスします。</p>
-        <p class="explain-p">• <strong>可視衛星・使用衛星数</strong>（$GPGSV/$GLGSV）: 上空のGNSSコンステレーション状況<br>•
-          <strong>HDOP/VDOP/PDOP</strong>（精度低下率）: 衛星配置による幾何学的な測位誤差の増幅指標<br>• <strong>Fix品質</strong>（単独/DGPS/RTK
-          Float/RTK Fixed）: 搬送波位相測位の解のステータス<br>• <strong>測位誤差の標準偏差</strong>（$GPGST）: mm/cmクラスの厳密な精度推定値</p>
-        <p class="explain-p">良好な観測条件下で RTK Fixed 状態を引き出すことができれば、ブラウザ上で 1〜3cm 程度の驚異的な精度を実現することが可能です。<br>※
-          Chrome系ブラウザ（Chrome, Edge, Opera）でのみ動作します。Safari / Firefox等では対象APIがサポートされていないためご利用いただけません。</p>
       </div>
+
+      <div class="explain-section"
+        style="border-radius: 0; border: none; border-left: 4px solid; border-image: linear-gradient(to bottom, #ff0000, #ff8700, #ffd300, #deff0a, #a1ff0a, #0aff99, #0aefff, #147df5, #580aff, #be0aff, #ff00d4, #ff0000) 1; background: #fff; padding: 32px;">
+        <div style="cursor: pointer; margin-bottom: 24px;"
+          onclick="window.open('https://tlarnc1-sl.github.io', '_blank')">
+          <h2 class="explain-h2"
+            style="background: linear-gradient(90deg, #ff0000, #ff8700, #ffd300, #a1ff0a, #0aefff, #580aff, #ff00d4, #ff0000); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: rainbow-text 4s linear infinite; margin-bottom: 8px;">
+            開発者: tlarnc(たらんく)</h2>
+          <p class="explain-p"
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; font-weight: 500; font-size: 13px;">
+            <span>tlarnc homepage</span>
+            <span style="opacity: 0.3;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+              </svg>
+            </span>
+          </p>
+        </div>
+
+        <h3 class="explain-h2" style="font-size: 14px; margin-top: 32px;">開発後記</h3>
+        <p class="explain-p" style="margin-bottom: 0;">
+          自分のいる場所を定量的に知りたくなるときってあるよね。ちなみにこれ、ほとんどClaude君に指示して作りました。技術の進歩をすごく感じました。ぜひこのアプリも、Claudeも使ってみてください。
+        </p>
+      </div>
+
+      <div style="text-align: center; padding: 40px 0 60px; opacity: 0.25; font-size: 11px; letter-spacing: 0.05em;">
+        &copy; 2026 tlarnc. All rights reserved.
+      </div>
+
+      <style>
+        @keyframes rainbow-text {
+          to {
+            background-position: 200% center;
+          }
+        }
+      </style>
     </div> <!-- explain-article end -->
 
     <!-- Fixed Bottom Retry Button -->
@@ -1454,11 +1482,11 @@
         let now = performance.now();
         let diff = (now - startTime) / 1000;
         document.getElementById('acqTimer').textContent = '経過 ' + diff.toFixed(1) + 's';
-        
+
         const kalmanAcc = kalman ? kalman.getEstimatedAccuracy() : 0;
         if (kalmanAcc > 0 && kalmanAcc < Infinity) {
           document.getElementById('acqAccuracy').textContent = '±' + kalmanAcc.toFixed(1) + 'm';
-          
+
           const grade = qualityGrade(kalmanAcc);
           ['S', 'A', 'B', 'C', 'D'].forEach(g => {
             const el = document.getElementById('aqG_' + g);
@@ -1474,7 +1502,7 @@
 
           const acqBtn = document.getElementById('acqBtn');
           const acqBtnTxt = document.getElementById('acqBtnTxt');
-          
+
           if (kalmanAcc > 50) {
             acqBtn.classList.add('btn-warn');
             acqBtnTxt.textContent = 'この精度で確定する（誤差大）';
