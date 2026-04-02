@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>idokeido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── IDLE STATE ── */
+    #idle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      transition: opacity 0.4s;
+    }
+    .idle-label {
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      color: rgba(0,0,0,0.35);
+    }
+
+    /* ── RESULT STATE ── */
+    #result {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: min(760px, 100vw - 48px);
+      gap: 0;
+    }
+
+    /* Big coords */
+    .coord-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 56px;
+    }
+    .coord-tag {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.3);
+    }
+    .coord-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 300;
+      color: #1d1d1f;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .coord-num .sign { color: rgba(0,0,0,0.25); }
+    .coord-num .dec  { color: rgba(0,0,0,0.45); }
+    .coord-dms {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(0,0,0,0.35);
+      letter-spacing: 0.02em;
+      margin-top: 4px;
+    }
+
+    /* Divider */
+    .sep {
+      width: 100%;
+      height: 1px;
+      background: rgba(0,0,0,0.08);
+      margin-bottom: 28px;
+    }
+
+    /* Log table */
+    .log-title {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.25);
+      align-self: flex-start;
+      margin-bottom: 14px;
+    }
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .log-table tr {
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .log-table tr:last-child { border-bottom: none; }
+    .log-table td {
+      padding: 9px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .log-table .lk {
+      color: rgba(0,0,0,0.3);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      width: 160px;
+      vertical-align: middle;
+    }
+    .log-table .lv {
+      color: #1d1d1f;
+      font-weight: 400;
+      vertical-align: middle;
+    }
+    .log-table .lv.good { color: #1a8c3a; }
+    .log-table .lv.warn { color: #b85000; }
+
+    /* Retry button */
+    .retry-wrap {
+      margin-top: 44px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(0,0,0,0.3);
+      font-size: 13px;
+      transition: color 0.2s;
+    }
+    .retry-wrap:hover { color: rgba(0,0,0,0.7); }
+
+    /* ── BUTTON ── */
+    .get-btn {
+      position: relative;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      padding: 16px 40px;
+      background: linear-gradient(160deg, #2a8fff, #005ce6);
+      box-shadow:
+        0 6px 24px rgba(0,100,255,0.32),
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        inset 0 -1px 0 rgba(0,0,30,0.18);
+      transition: box-shadow 0.2s, transform 0.15s;
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .get-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+    }
+    .get-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 32px rgba(0,100,255,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .get-btn:active:not(:disabled) { transform: scale(0.97); }
+    .get-btn:disabled { opacity: 0.55; cursor: default; }
+
+    .spinner {
+      width: 15px; height: 15px;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      display: none;
+    }
+    .btn-loading .spinner { display: block; }
+    .btn-loading .btn-ico { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    #errorMsg {
+      display: none;
+      font-size: 13px;
+      color: #c0392b;
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Idle / button state -->
+  <div id="idle">
+    <span class="idle-label">idokeido</span>
+    <button class="get-btn" id="btn" onclick="acquire()">
+      <div class="spinner"></div>
+      <span class="btn-ico">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+        </svg>
+      </span>
+      <span id="btnTxt">現在地を取得</span>
+    </button>
+    <div id="errorMsg"></div>
+  </div>
+
+  <!-- Result state -->
+  <div id="result">
+    <!-- LAT -->
+    <div class="coord-block">
+      <span class="coord-tag">Latitude — 緯度</span>
+      <div class="coord-num" id="latNum"></div>
+      <div class="coord-dms" id="latDms"></div>
+    </div>
+    <!-- LON -->
+    <div class="coord-block">
+      <span class="coord-tag">Longitude — 経度</span>
+      <div class="coord-num" id="lonNum"></div>
+      <div class="coord-dms" id="lonDms"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <span class="log-title">取得ログ</span>
+    <table class="log-table" id="logTable"></table>
+
+    <div class="retry-wrap" onclick="reset()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+      </svg>
+      再取得
+    </div>
+  </div>
+
+<script>
+  const btn      = document.getElementById('btn');
+  const btnTxt   = document.getElementById('btnTxt');
+  const errDiv   = document.getElementById('errorMsg');
+  const idleEl   = document.getElementById('idle');
+  const resultEl = document.getElementById('result');
+
+  function toDMS(deg, isLat) {
+    const abs = Math.abs(deg);
+    const d   = Math.floor(abs);
+    const mf  = (abs - d) * 60;
+    const m   = Math.floor(mf);
+    const s   = (mf - m) * 60;
+    const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+    return `${dir}  ${d}°  ${String(m).padStart(2,'0')}′  ${s.toFixed(5)}″`;
+  }
+
+  function renderCoord(el, deg) {
+    const sign   = deg < 0 ? '−' : '+';
+    const abs    = Math.abs(deg);
+    const [i, d] = abs.toFixed(8).split('.');
+    el.innerHTML =
+      `<span class="sign">${sign}</span>` +
+      `${i}` +
+      `<span class="dec">.${d}</span>`;
+  }
+
+  function logRow(key, value, cls='') {
+    return `<tr><td class="lk">${key}</td><td class="lv ${cls}">${value}</td></tr>`;
+  }
+
+  function acquire() {
+    if (!navigator.geolocation) {
+      showErr('Geolocation APIに対応していません。');
+      return;
+    }
+    setLoading(true);
+    errDiv.style.display = 'none';
+
+    const t0 = performance.now();
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const elapsed = Math.round(performance.now() - t0);
+        setLoading(false);
+        showResult(pos, elapsed);
+      },
+      (err) => {
+        setLoading(false);
+        const msg = {
+          1: '位置情報へのアクセスが拒否されました。\nブラウザ設定で許可してください。',
+          2: '位置情報を取得できませんでした。\n（電波・ネットワークをご確認ください）',
+          3: 'タイムアウト。もう一度お試しください。',
+        }[err.code] || '不明なエラーが発生しました。';
+        showErr(msg);
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    );
+  }
+
+  function showResult(pos, elapsed) {
+    const c   = pos.coords;
+    const lat = c.latitude;
+    const lon = c.longitude;
+    const acc = c.accuracy;
+    const alt = c.altitude;
+    const altAcc = c.altitudeAccuracy;
+    const spd = c.speed;
+    const hdg = c.heading;
+    const ts  = pos.timestamp;
+
+    renderCoord(document.getElementById('latNum'), lat);
+    renderCoord(document.getElementById('lonNum'), lon);
+    document.getElementById('latDms').textContent = toDMS(lat, true);
+    document.getElementById('lonDms').textContent = toDMS(lon, false);
+
+    const accCls = acc <= 20 ? 'good' : acc <= 100 ? '' : 'warn';
+    const accTxt = acc <= 20 ? `${acc.toFixed(1)} m  ✓ 高精度`
+                 : acc <= 100 ? `${acc.toFixed(1)} m`
+                 : `${acc.toFixed(1)} m  ⚠ 低精度`;
+
+    const rows = [
+      logRow('取得日時',      new Date(ts).toLocaleString('ja-JP')),
+      logRow('elapsed',       `${elapsed} ms`),
+      logRow('水平精度',      accTxt, accCls),
+      logRow('緯度 (raw)',    lat.toFixed(10) + ' °'),
+      logRow('経度 (raw)',    lon.toFixed(10) + ' °'),
+      logRow('標高',          alt  != null ? alt.toFixed(2) + ' m' : 'N/A'),
+      logRow('標高精度',      altAcc != null ? altAcc.toFixed(2) + ' m' : 'N/A'),
+      logRow('速度',          spd != null ? spd.toFixed(2) + ' m/s' : 'N/A'),
+      logRow('方位',          hdg  != null ? hdg.toFixed(1) + ' °' : 'N/A'),
+      logRow('取得方式',      'navigator.geolocation'),
+      logRow('enableHighAccuracy', 'true'),
+      logRow('maximumAge',    '0 ms  (キャッシュなし)'),
+    ];
+
+    document.getElementById('logTable').innerHTML = rows.join('');
+
+    idleEl.style.display  = 'none';
+    resultEl.style.display = 'flex';
+  }
+
+  function setLoading(on) {
+    btn.disabled = on;
+    btn.classList.toggle('btn-loading', on);
+    btnTxt.textContent = on ? '取得中...' : '現在地を取得';
+  }
+
+  function showErr(msg) {
+    errDiv.textContent   = msg;
+    errDiv.style.display = 'block';
+  }
+
+  function reset() {
+    resultEl.style.display = 'none';
+    idleEl.style.display   = 'flex';
+    errDiv.style.display   = 'none';
+    setLoading(false);
+  }
+</script>
+</body>
+</html>
